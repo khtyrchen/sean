@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sean單字條測驗 V16 (括號通融版)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        /* -------------------
+           可愛手繪風核心樣式
+        ------------------- */
+        :root {
+            --paper-color: #fffdf0;
+            --ink-color: #444;
+            --accent-pink: #ffadad;
+            --accent-blue: #a0c4ff;
+            --accent-green: #9bf6ff;
+            --accent-yellow: #fdffb6;
+            --border-thickness: 3px;
+        }
+
+        body {
+            font-family: 'Patrick Hand', '微軟正黑體', cursive, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; color: var(--ink-color);
+            background-color: #fcf8e3;
+            background-image: radial-gradient(#f7d794 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+
+        .container {
+            background: var(--paper-color); padding: 2.5rem;
+            border-radius: 20px 5px 25px 10px;
+            border: var(--border-thickness) solid var(--ink-color);
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.15);
+            text-align: center; width: 90%; max-width: 480px;
+            position: relative; transform: rotate(-1deg);
+        }
+
+        .container::before {
+            content: ''; position: absolute;
+            top: -15px; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 35px; background-color: rgba(255, 255, 255, 0.6);
+            border: 2px dashed #ccc; z-index: 1;
+        }
+
+        h1 { color: var(--ink-color); margin-bottom: 15px; font-size: 2.2rem; text-shadow: 2px 2px 0 #eee; }
+        
+        .btn {
+            font-family: 'Patrick Hand', cursive; background-color: var(--accent-green);
+            color: var(--ink-color); border: var(--border-thickness) solid var(--ink-color);
+            padding: 10px 20px; font-size: 1.3rem; border-radius: 30px;
+            cursor: pointer; margin: 8px; transition: all 0.2s ease;
+            font-weight: bold; box-shadow: 4px 4px 0 var(--ink-color);
+            width: 100%; max-width: 320px;
+        }
+        .btn:hover { transform: translate(-2px, -2px) rotate(1deg); background-color: #c7ffff; }
+        .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink-color); }
+        
+        .btn-audio { background-color: var(--accent-blue); } .btn-audio:hover { background-color: #cce0ff; }
+        .btn-submit { background-color: var(--accent-yellow); } .btn-submit:hover { background-color: #ffffd1; }
+        .btn-next { background-color: var(--accent-pink); display:none; } .btn-next:hover { background-color: #ffd1d1; }
+        
+        /* 設定區塊樣式 */
+        .settings-area {
+            background-color: #fff; border: 2px dashed #ccc;
+            padding: 15px; border-radius: 15px; margin-bottom: 20px;
+            text-align: left;
+        }
+        .setting-label { font-size: 1rem; color: #888; display: block; margin-bottom: 5px; }
+        select, input[type="range"] { width: 100%; margin-bottom: 10px; cursor: pointer; }
+        select { padding: 5px; font-size: 1rem; border: 2px solid #ddd; border-radius: 5px; }
+
+        .input-group { margin: 20px auto; text-align: left; max-width: 320px; position: relative; }
+        .input-label { font-size: 1.2rem; color: var(--ink-color); margin-bottom: 8px; display: block; font-weight: bold; }
+        
+        input[type="text"] { 
+            font-family: 'Patrick Hand', '微軟正黑體', monospace; padding: 12px 15px; font-size: 1.5rem;
+            width: 100%; border: 3px dashed #aaa; border-radius: 10px; box-sizing: border-box;
+            background-color: #fffaf0; outline: none; transition: 0.3s;
+            background-image: repeating-linear-gradient(transparent, transparent 38px, #e5e0d0 39px, #e5e0d0 40px);
+            background-attachment: local; line-height: 40px;
+        }
+        input[type="text"]:focus { border-color: var(--accent-blue); border-style: solid; }
+        
+        input.correct-input { border: 3px solid #77dd77 !important; background-color: #eaffea; }
+        input.wrong-input { border: 3px solid #ff6961 !important; background-color: #ffe6e6; }
+
+        .cards-area { display: flex; gap: 15px; justify-content: center; margin: 25px 0; }
+        
+        .answer-box { 
+            background-color: #f0f0f0; color: #888; padding: 10px 15px; 
+            border-radius: 12px; cursor: pointer; border: 3px dashed #ccc; font-size: 1.2rem; flex: 1;
+            transition: all 0.3s; transform: rotate(-2deg);
+        }
+        .answer-box:nth-child(2) { transform: rotate(2deg); }
+        .answer-box:hover { transform: scale(1.05) rotate(0deg); background-color: #e9e9e9; }
+        
+        .answer-box.revealed { 
+            background-color: var(--accent-yellow); color: var(--ink-color);
+            border: 3px solid var(--ink-color); font-weight: bold;
+            transform: rotate(0deg) scale(1.05); box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+
+        .message { margin-top: 20px; font-weight: bold; min-height: 30px; font-size: 1.3rem; }
+        .correct-msg { color: #44a047; text-shadow: 1px 1px 0 #a8e6cf; } 
+        .wrong-msg { color: #d32f2f; text-shadow: 1px 1px 0 #ffcdd2; }
+        .partial-msg { color: #f57c00; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎧 2026.01.21</h1>
+    
+    <div class="settings-area">
+        <label class="setting-label">🗣️ 選擇發音 (Voice)：</label>
+        <select id="voice-select" onchange="testVoice()">
+            <option value="">載入中...</option>
+        </select>
+        
+        <label class="setting-label">🐢 語速調整 (Speed)：<span id="speed-val">1</span></label>
+        <input type="range" id="rate-range" min="0.5" max="1.5" step="0.1" value="1" oninput="updateSpeedLabel()">
+    </div>
+
+    <p style="font-size: 1.2rem;">第 <span id="current-index" style="font-weight:bold; color: var(--accent-blue);">1</span> 題 / 共 <span id="total-count">0</span> 題</p>
+
+    <button class="btn btn-audio" onclick="playAudio()">🔊 試聽 / 播放 (Play)</button>
+
+    <div class="cards-area">
+        <div id="box-zh" class="answer-box" onclick="toggleZh()">🙈 偷看中文</div>
+        <div id="box-en" class="answer-box" onclick="toggleEn()">🙈 偷看英文</div>
+    </div>
+    
+    <div class="input-group">
+        <label class="input-label">✏️ 請輸入英文 (English)：</label>
+        <input type="text" id="input-en" placeholder="拼寫..." autocomplete="off">
+    </div>
+
+    <div class="input-group">
+        <label class="input-label">✏️ 請輸入中文 (Chinese)：</label>
+        <input type="text" id="input-zh" placeholder="中文意思..." autocomplete="off">
+    </div>
+    
+    <button class="btn btn-submit" onclick="checkAnswer()">✨ 送出答案 (Submit)</button>
+    <button class="btn btn-next" onclick="nextQuestion()" id="next-btn">➡️ 下一題 (Next)</button>
+
+    <div id="message" class="message"></div>
+
+</div>
+
+<script>
+    const QUESTION_COUNT = 10; 
+
+    // 單字庫
+    const fullDatabase = [
+        { en: "floor", zh: "地板" },
+        { en: "upstairs", zh: ["在樓上 樓上","樓上 在樓上"] },
+        { en: "downstairs", zh: ["在樓下 樓下","樓下 在樓下"] },
+        { en: "behind", zh: "在什麼後面" },
+        { en: "in front of", zh: "在什麼前面" },
+        { en: "place", zh: "放置 地方" },
+        { en: "clothes", zh: "衣物" },
+        { en: "cloth", zh: "布料" },
+        { en: "armchair", zh: "扶手椅" },
+        { en: "bookcase", zh: "書櫃" },
+        { en: "refrigerator", zh: "冰箱" },
+        { en: "hall", zh: ["大廳 走廊 禮堂","走廊 大廳 禮堂","大廳 禮堂 走廊","走廊 禮堂 大廳","禮堂 大廳 走廊","禮堂 走廊 大廳"] },
+        { en: "who", zh: "誰" },
+        { en: "whose", zh: "誰的" },
+        { en: "mine", zh: "我的(放句尾)" },
+        { en: "I'm upstairs", zh: "我在樓上" },
+        { en: "you're downstairs", zh: "你在樓下" },
+        { en: "closet", zh: "衣櫃" },
+        { en: "cupboard", zh: ["櫥櫃 碗櫥","碗櫥 櫥櫃"] },
+        { en: "yours", zh: "你的 你們的(放句尾)" },
+        { en: "hers", zh: "她的(放句尾)" },
+        { en: "his", zh: "他的(放句中)" },
+        { en: "his", zh: "他的(放句尾)" },
+        { en: "dive", zh: "潛水" }
+    ];
+
+    let quizList = []; 
+    let currentIndex = 0;
+    let currentItem = {};
+    let isRevealedEn = false;
+    let isRevealedZh = false;
+    let voices = []; 
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSoundEffect(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        if (type === 'correct') {
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.5);
+            setTimeout(() => {
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc2.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.1);
+                gain2.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc2.start(); osc2.stop(audioCtx.currentTime + 0.4);
+            }, 100);
+        } else if (type === 'wrong') {
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+    }
+
+    function shuffleArray(array) {
+        let newArray = [...array]; 
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+    }
+
+    function populateVoiceList() {
+        if (typeof speechSynthesis === 'undefined') return;
+        voices = speechSynthesis.getVoices();
+        const englishVoices = voices.filter(v => v.lang.includes('en'));
+        const voiceSelect = document.getElementById("voice-select");
+        voiceSelect.innerHTML = "";
+
+        if(englishVoices.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = "系統無英文發音，使用預設";
+            voiceSelect.appendChild(option);
+            return;
+        }
+
+        englishVoices.forEach((voice, index) => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.value = index; 
+            option.setAttribute('data-name', voice.name);
+            if (voice.name.includes('Google US') || voice.name.includes('Zira')) {
+                option.selected = true;
+            }
+            voiceSelect.appendChild(option);
+        });
+    }
+
+    function updateSpeedLabel() {
+        const rate = document.getElementById("rate-range").value;
+        document.getElementById("speed-val").innerText = rate;
+    }
+
+    function testVoice() {
+        window.speechSynthesis.cancel();
+        playAudio();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const shuffledDB = shuffleArray(fullDatabase);
+        quizList = shuffledDB.slice(0, QUESTION_COUNT);
+        document.getElementById("total-count").innerText = quizList.length;
+        
+        loadQuestion();
+        populateVoiceList();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+        document.getElementById("input-en").addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
+        document.getElementById("input-zh").addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
+    });
+
+    function loadQuestion() {
+        if (currentIndex >= quizList.length) {
+            document.querySelector(".container").innerHTML = `<h2>🏆 測驗結束！</h2><p>恭喜完成！</p><button class="btn btn-submit" onclick="location.reload()">🔄 再玩一次</button>`;
+            return;
+        }
+        currentItem = quizList[currentIndex];
+        document.getElementById("current-index").innerText = currentIndex + 1;
+        const inputEn = document.getElementById("input-en");
+        const inputZh = document.getElementById("input-zh");
+        inputEn.value = ""; inputZh.value = "";
+        inputEn.className = ""; inputZh.className = "";
+        document.getElementById("message").innerText = "";
+        document.getElementById("next-btn").style.display = "none";
+        isRevealedEn = false; isRevealedZh = false;
+        resetCard("box-en", "🙈 偷看英文");
+        resetCard("box-zh", "🙈 偷看中文");
+        inputEn.focus();
+    }
+
+    function resetCard(id, text) {
+        const el = document.getElementById(id);
+        el.innerText = text; el.className = "answer-box";
+    }
+
+    function toggleZh() {
+        const box = document.getElementById("box-zh");
+        if (isRevealedZh) {
+            box.innerText = "🙈 偷看中文"; box.className = "answer-box"; isRevealedZh = false;
+        } else {
+            const displayZh = Array.isArray(currentItem.zh) ? currentItem.zh.join(" / ") : currentItem.zh;
+            box.innerText = displayZh; 
+            box.className = "answer-box revealed"; isRevealedZh = true;
+        }
+    }
+
+    function toggleEn() {
+        const box = document.getElementById("box-en");
+        if (isRevealedEn) { box.innerText = "🙈 偷看英文"; box.className = "answer-box"; isRevealedEn = false; }
+        else { box.innerText = currentItem.en; box.className = "answer-box revealed"; isRevealedEn = true; }
+    }
+
+    function playAudio() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(currentItem.en);
+            
+            // 抓取語速
+            const rate = document.getElementById("rate-range").value;
+            utterance.rate = rate;
+
+            const voiceSelect = document.getElementById("voice-select");
+            const selectedOption = voiceSelect.selectedOptions[0];
+            
+            if (selectedOption) {
+                const voiceName = selectedOption.getAttribute('data-name');
+                const selectedVoice = voices.find(v => v.name === voiceName);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+            }
+
+            utterance.lang = 'en-US'; 
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // ===========================================
+    // 💡 關鍵更新：智慧判讀功能
+    // ===========================================
+    function normalizeText(text) {
+        if (!text) return "";
+        return text
+            .replace(/（/g, "(")   // 把粗的左括號變成細的
+            .replace(/）/g, ")")   // 把粗的右括號變成細的
+            .replace(/\s+/g, "");  // 把多餘的空白鍵全部刪掉
+    }
+
+    function checkAnswer() {
+        const inputEn = document.getElementById("input-en");
+        const inputZh = document.getElementById("input-zh");
+        const msg = document.getElementById("message");
+        
+        const valEn = inputEn.value.trim().toLowerCase();
+        // 這裡會先把使用者輸入的中文進行「標準化」處理
+        const valZh = normalizeText(inputZh.value.trim());
+
+        if (valEn === "" && valZh === "") { playAudio(); return; }
+
+        const isEnCorrect = (valEn === currentItem.en.toLowerCase());
+        
+        const validAnswers = Array.isArray(currentItem.zh) ? currentItem.zh : [currentItem.zh];
+        
+        const isZhCorrect = validAnswers.some(target => {
+            // 把標準答案也進行「標準化」處理，這樣兩邊就平等了
+            const cleanTarget = normalizeText(target);
+
+            // 1. 完全符合
+            if (valZh === cleanTarget) return true;
+            
+            // 2. 包含判斷 (例如答案是"我的(放句尾)"，輸入"我的"也算對)
+            // 條件：輸入的字長度要大於等於1，且被包含在答案裡
+            if (cleanTarget.includes(valZh) && valZh.length >= 1) return true;
+            
+            return false;
+        });
+
+        inputEn.className = isEnCorrect ? "correct-input" : "wrong-input";
+        inputZh.className = isZhCorrect ? "correct-input" : "wrong-input";
+
+        if (isEnCorrect && isZhCorrect) {
+            playSoundEffect('correct');
+            msg.innerHTML = "🎉 雙語全對！<br>Awesome!";
+            msg.className = "message correct-msg";
+            document.getElementById("next-btn").style.display = "inline-block";
+            if(!isRevealedZh) toggleZh();
+            if(!isRevealedEn) toggleEn();
+        } else if (isEnCorrect && !isZhCorrect) {
+            playSoundEffect('wrong');
+            msg.innerText = "⚠️ 英文對了，但中文意思要再想想喔！";
+            msg.className = "message partial-msg";
+        } else if (!isEnCorrect && isZhCorrect) {
+            playSoundEffect('wrong');
+            msg.innerText = "⚠️ 中文對了，但英文拼字有錯喔！";
+            msg.className = "message partial-msg";
+            playAudio();
+        } else {
+            playSoundEffect('wrong');
+            msg.innerText = "❌ 兩個都不太對，再試一次！";
+            msg.className = "message wrong-msg";
+            playAudio();
+        }
+    }
+
+    function nextQuestion() { currentIndex++; loadQuestion(); }
+</script>
+</body>
+</html>
