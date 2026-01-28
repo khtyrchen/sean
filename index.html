@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sean單字條測驗</title>
+    <title>Sean單字條測驗</title>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
     <style>
         /* -------------------
@@ -16,6 +16,7 @@
             --accent-blue: #a0c4ff;
             --accent-green: #9bf6ff;
             --accent-yellow: #fdffb6;
+            --score-color: #ff9f43; /* 新增分數顏色 */
             --border-thickness: 3px;
         }
 
@@ -71,6 +72,21 @@
         select, input[type="range"] { width: 100%; margin-bottom: 10px; cursor: pointer; }
         select { padding: 5px; font-size: 1rem; border: 2px solid #ddd; border-radius: 5px; }
 
+        /* 分數面板樣式 */
+        .score-board {
+            background-color: #fff5e6;
+            border: 2px solid var(--score-color);
+            border-radius: 12px;
+            padding: 10px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d35400;
+        }
+        .score-item span { color: var(--ink-color); font-weight: normal; font-size: 1rem; }
+
         .input-group { margin: 20px auto; text-align: left; max-width: 320px; position: relative; }
         .input-label { font-size: 1.2rem; color: var(--ink-color); margin-bottom: 8px; display: block; font-weight: bold; }
         
@@ -123,13 +139,18 @@
         <input type="range" id="rate-range" min="0.5" max="1.5" step="0.1" value="1" oninput="updateSpeedLabel()">
     </div>
 
+    <div class="score-board">
+        <div class="score-item"><span>🏆 總分:</span> <b id="total-score">0</b></div>
+        <div class="score-item"><span>⭐ 本題價值:</span> <b id="potential-score">10</b></div>
+    </div>
+
     <p style="font-size: 1.2rem;">第 <span id="current-index" style="font-weight:bold; color: var(--accent-blue);">1</span> 題 / 共 <span id="total-count">0</span> 題</p>
 
     <button class="btn btn-audio" onclick="playAudio()">🔊 試聽 / 播放 (Play)</button>
 
     <div class="cards-area">
-        <div id="box-zh" class="answer-box" onclick="toggleZh()">🙈 偷看中文</div>
-        <div id="box-en" class="answer-box" onclick="toggleEn()">🙈 偷看英文</div>
+        <div id="box-zh" class="answer-box" onclick="toggleZh()">🙈 偷看中文 (-2分)</div>
+        <div id="box-en" class="answer-box" onclick="toggleEn()">🙈 偷看英文 (-2分)</div>
     </div>
     
     <div class="input-group">
@@ -187,6 +208,13 @@
     let isRevealedZh = false;
     let voices = []; 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // --- 計分系統變數 ---
+    let totalScore = 0;           // 總分
+    let currentPotentialScore = 10; // 這一題目前能拿幾分
+    let hasPeekedZhThisRound = false; // 是否偷看過中文
+    let hasPeekedEnThisRound = false; // 是否偷看過英文
+    let isQuestionSolved = false;     // 這一題是否已解完(避免重複加分)
 
     function playSoundEffect(type) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -267,6 +295,11 @@
         playAudio();
     }
 
+    function updateScoreBoard() {
+        document.getElementById("total-score").innerText = totalScore;
+        document.getElementById("potential-score").innerText = currentPotentialScore;
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         const shuffledDB = shuffleArray(fullDatabase);
         quizList = shuffledDB.slice(0, QUESTION_COUNT);
@@ -283,7 +316,10 @@
 
     function loadQuestion() {
         if (currentIndex >= quizList.length) {
-            document.querySelector(".container").innerHTML = `<h2>🏆 測驗結束！</h2><p>恭喜完成！</p><button class="btn btn-submit" onclick="location.reload()">🔄 再玩一次</button>`;
+            document.querySelector(".container").innerHTML = `
+                <h2>🏆 測驗結束！</h2>
+                <p style="font-size:1.5rem">你的總分是：<span style="color:red; font-weight:bold">${totalScore}</span> 分</p>
+                <button class="btn btn-submit" onclick="location.reload()">🔄 再玩一次</button>`;
             return;
         }
         currentItem = quizList[currentIndex];
@@ -294,9 +330,17 @@
         inputEn.className = ""; inputZh.className = "";
         document.getElementById("message").innerText = "";
         document.getElementById("next-btn").style.display = "none";
+        
+        // 重置狀態
         isRevealedEn = false; isRevealedZh = false;
-        resetCard("box-en", "🙈 偷看英文");
-        resetCard("box-zh", "🙈 偷看中文");
+        hasPeekedZhThisRound = false; hasPeekedEnThisRound = false;
+        currentPotentialScore = 10;
+        isQuestionSolved = false;
+        
+        resetCard("box-en", "🙈 偷看英文 (-2分)");
+        resetCard("box-zh", "🙈 偷看中文 (-2分)");
+        updateScoreBoard();
+        
         inputEn.focus();
     }
 
@@ -308,18 +352,41 @@
     function toggleZh() {
         const box = document.getElementById("box-zh");
         if (isRevealedZh) {
+            // 蓋回去
             box.innerText = "🙈 偷看中文"; box.className = "answer-box"; isRevealedZh = false;
         } else {
+            // 翻開
             const displayZh = Array.isArray(currentItem.zh) ? currentItem.zh.join(" / ") : currentItem.zh;
             box.innerText = displayZh; 
             box.className = "answer-box revealed"; isRevealedZh = true;
+            
+            // 扣分邏輯：如果這局還沒偷看過中文，且題目還沒解完
+            if (!hasPeekedZhThisRound && !isQuestionSolved) {
+                currentPotentialScore -= 2;
+                if(currentPotentialScore < 0) currentPotentialScore = 0;
+                hasPeekedZhThisRound = true;
+                updateScoreBoard();
+            }
         }
     }
 
     function toggleEn() {
         const box = document.getElementById("box-en");
-        if (isRevealedEn) { box.innerText = "🙈 偷看英文"; box.className = "answer-box"; isRevealedEn = false; }
-        else { box.innerText = currentItem.en; box.className = "answer-box revealed"; isRevealedEn = true; }
+        if (isRevealedEn) {
+            // 蓋回去
+            box.innerText = "🙈 偷看英文"; box.className = "answer-box"; isRevealedEn = false;
+        } else {
+            // 翻開
+            box.innerText = currentItem.en; box.className = "answer-box revealed"; isRevealedEn = true;
+            
+            // 扣分邏輯：如果這局還沒偷看過英文，且題目還沒解完
+            if (!hasPeekedEnThisRound && !isQuestionSolved) {
+                currentPotentialScore -= 2;
+                if(currentPotentialScore < 0) currentPotentialScore = 0;
+                hasPeekedEnThisRound = true;
+                updateScoreBoard();
+            }
+        }
     }
 
     function playAudio() {
@@ -347,10 +414,6 @@
             window.speechSynthesis.speak(utterance);
         }
     }
-
-    // ===========================================
-    // 💡 關鍵更新：移除括號自動判讀，改為嚴格比對
-    // ===========================================
     
     function checkAnswer() {
         const inputEn = document.getElementById("input-en");
@@ -358,7 +421,7 @@
         const msg = document.getElementById("message");
         
         const valEn = inputEn.value.trim().toLowerCase();
-        const valZh = inputZh.value.trim(); // 直接讀取，不做任何自動轉換
+        const valZh = inputZh.value.trim(); 
 
         if (valEn === "" && valZh === "") { playAudio(); return; }
 
@@ -366,18 +429,25 @@
         
         const validAnswers = Array.isArray(currentItem.zh) ? currentItem.zh : [currentItem.zh];
         
-        // 嚴格比對：輸入的中文必須和答案一模一樣 (Strict Equality)
+        // 嚴格比對
         const isZhCorrect = validAnswers.some(target => target === valZh);
 
         inputEn.className = isEnCorrect ? "correct-input" : "wrong-input";
         inputZh.className = isZhCorrect ? "correct-input" : "wrong-input";
 
         if (isEnCorrect && isZhCorrect) {
+            // 答對了
+            if (!isQuestionSolved) {
+                totalScore += currentPotentialScore;
+                isQuestionSolved = true;
+                updateScoreBoard();
+            }
+
             playSoundEffect('correct');
-            msg.innerHTML = "🎉 雙語全對！<br>Awesome!";
+            msg.innerHTML = `🎉 答對了！本題獲得 ${currentPotentialScore} 分！`;
             msg.className = "message correct-msg";
             document.getElementById("next-btn").style.display = "inline-block";
-            if(!isRevealedZh) toggleZh();
+            if(!isRevealedZh) toggleZh(); // 顯示答案但不扣分 (因為 isQuestionSolved = true)
             if(!isRevealedEn) toggleEn();
         } else if (isEnCorrect && !isZhCorrect) {
             playSoundEffect('wrong');
@@ -399,5 +469,4 @@
     function nextQuestion() { currentIndex++; loadQuestion(); }
 </script>
 </body>
-
 </html>
