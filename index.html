@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sean單字條測驗</title>
+    <title>Sean單字條測驗 (全題庫版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
     <style>
         /* -------------------
@@ -181,35 +181,36 @@
 </div>
 
 <script>
-    const QUESTION_COUNT = 10; // ⚠️ 修改：只出 10 題
-
-    // 單字庫 (2026.01.21)
+    // 單字庫 (2026.02.04)
     const fullDatabase = [
-        { en: "possessive", zh: "所有格" },
-        { en: "possessive pronoun", zh: "所有格代名詞" },
-        { en: "cupboard", zh: ["櫥櫃 碗櫥","碗櫥 櫥櫃"] },
-        { en: "refrigerator", zh: "冰箱" },
-        { en: "sneakers", zh: "運動鞋" },
-        { en: "front yard", zh: "前院" },
-        { en: "backyard", zh: "後院" },
-        { en: "slippers", zh: "拖鞋" },
+        { en: "couch", zh: ["長椅 長沙發","長沙發 長椅"] },
         { en: "cushion", zh: ["軟墊 坐墊","坐墊 軟墊"] },
-        { en: "near", zh: "靠近" },
-        { en: "barefoot", zh: "光著腳" },
-        { en: "dining room", zh: "飯廳" },
-        { en: "mat", zh: "墊子" },
-        { en: "wall", zh: ["很好 水井","水井 很好"] },
-        { en: "traditional", zh: "傳統的" },
-        { en: "Japan", zh: "日本" },
-        { en: "Japanese house", zh: "日式房子" },
-        { en: "convenient", zh: ["便利的 方便的","方便的 便利的"] },
-        { en: "store", zh: "商店" },
-        { en: "ever", zh: "曾經" },
-        { en: "never", zh: ["不曾 從不","從不 不曾"] },
-        { en: "low", zh: "低矮的" },
-        { en: "slow", zh: "慢的" },
-        { en: "at night", zh: "在晚上" },
-        { en: "become", zh: "變成" },
+        { en: "paper door", zh: "紙門" },
+        { en: "wooden door", zh: "木門" },
+        { en: "around", zh: "到處" },
+        { en: "traditional Japanese house", zh: "傳統的日式房子" },
+        { en: "clock", zh: "時鐘" },
+        { en: "mirror", zh: "鏡子" },
+        { en: "radio", zh: "收音機" },
+        { en: "frame", zh: "框架" },
+        { en: "painting", zh: ["圖畫 油漆","油漆 圖畫"] },
+        { en: "stand in a circle", zh: "站著圍成一個圈" },
+        { en: "stand inside the circle", zh: "站在圓圈裡面" },
+        { en: "while", zh: "當(兩件事同時發生)" },
+        { en: "when", zh: "當(指特定時間點發生)" },
+        { en: "yesterday", zh: "昨天" },
+        { en: "tomorrow", zh: "明天" },
+        { en: "cut-outs", zh: "剪紙" },
+        { en: "cut out", zh: "剪下來" },
+        { en: "writing tip", zh: "寫作提示" },
+        { en: "adjective", zh: "形容詞" },
+        { en: "pronoun", zh: "代名詞" },
+        { en: "noun", zh: "名詞" },
+        { en: "verb", zh: "動詞" },
+        { en: "adverb", zh: "副詞" },
+        { en: "subject", zh: ["主詞 科目","科目 主詞"] },
+        { en: "cenvenience store", zh: "便利商店" },
+        { en: "boots", zh: "靴子" },
     ];
 
     let quizList = []; 
@@ -220,9 +221,9 @@
     let voices = []; 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // --- 計分系統變數 (New) ---
+    // --- 計分系統變數 ---
     let totalScore = 0;
-    let currentRoundScore = 10; // ⚠️ 修改：每題預設 10 分
+    let currentRoundScore = 10;
     let hasPeekedZhThisRound = false;
     let hasPeekedEnThisRound = false;
     let isQuestionDone = false; 
@@ -307,8 +308,10 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+        // ⚠️ 修改：取得全部題庫並打亂，不再只取前 10 題
         const shuffledDB = shuffleArray(fullDatabase);
-        quizList = shuffledDB.slice(0, QUESTION_COUNT);
+        quizList = shuffledDB; 
+        
         document.getElementById("total-count").innerText = quizList.length;
         
         loadQuestion();
@@ -333,7 +336,7 @@
         
         // --- 重置每題狀態 ---
         currentItem = quizList[currentIndex];
-        currentRoundScore = 10; // ⚠️ 修改：每題分數重置為 10
+        currentRoundScore = 10;
         hasPeekedZhThisRound = false;
         hasPeekedEnThisRound = false;
         isQuestionDone = false;
@@ -357,9 +360,8 @@
     }
 
     function toggleZh() {
-        // 如果已經答對結束，就不再執行扣分邏輯
         if (!isQuestionDone && !hasPeekedZhThisRound) {
-            currentRoundScore -= 2; // ⚠️ 修改：扣 2 分
+            currentRoundScore -= 2;
             hasPeekedZhThisRound = true;
         }
 
@@ -378,7 +380,7 @@
 
     function toggleEn() {
         if (!isQuestionDone && !hasPeekedEnThisRound) {
-            currentRoundScore -= 2; // ⚠️ 修改：扣 2 分
+            currentRoundScore -= 2;
             hasPeekedEnThisRound = true;
         }
 
